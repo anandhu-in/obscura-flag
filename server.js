@@ -18,7 +18,9 @@ const REAL_FLAGS = [
 
 app.use(cors());
 app.use(bodyParser.json());
-app.use(express.static(path.join(__dirname, 'public')));
+
+// Serve static files from the ROOT folder (because you didn't use a public/ folder)
+app.use(express.static(__dirname));
 
 // Helper: load / save players
 function loadPlayers() {
@@ -42,7 +44,6 @@ app.post('/api/auth', async (req, res) => {
   const existing = players.find(p => p.callsign.toLowerCase() === callsign.toLowerCase());
 
   if (existing) {
-    // Login
     const match = await bcrypt.compare(password, existing.passwordHash);
     if (!match) {
       return res.status(401).json({ error: 'Incorrect password' });
@@ -53,7 +54,6 @@ app.post('/api/auth', async (req, res) => {
       score: existing.score
     });
   } else {
-    // Register
     const passwordHash = await bcrypt.hash(password, 10);
     const newPlayer = {
       callsign,
@@ -73,7 +73,7 @@ app.post('/api/auth', async (req, res) => {
 
 // Submit flags
 app.post('/api/submit', async (req, res) => {
-  const { callsign, password, flags } = req.body; // flags = [flag1, flag2, flag3]
+  const { callsign, password, flags } = req.body;
 
   if (!callsign || !password || !Array.isArray(flags)) {
     return res.status(400).json({ error: 'Invalid request' });
@@ -106,7 +106,7 @@ app.post('/api/submit', async (req, res) => {
 
   res.json({
     success: true,
-    results,          // [true, false, true]
+    results,
     score: player.score
   });
 });
@@ -124,11 +124,15 @@ app.get('/api/leaderboard', (req, res) => {
   res.json(players);
 });
 
-// Fallback to frontend
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+// Fallback routes
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+app.get('/leaderboard.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'leaderboard.html'));
 });
 
 app.listen(PORT, () => {
-  console.log(`OBSCURA server running on http://localhost:${PORT}`);
+  console.log(`OBSCURA server running on port ${PORT}`);
 });
