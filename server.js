@@ -124,6 +124,32 @@ app.get('/api/leaderboard', (req, res) => {
   res.json(players);
 });
 
+// Delete own account
+app.post('/api/delete-me', async (req, res) => {
+  const { callsign, password } = req.body;
+
+  if (!callsign || !password) {
+    return res.status(400).json({ error: 'Callsign and password required' });
+  }
+
+  const players = loadPlayers();
+  const playerIndex = players.findIndex(p => p.callsign.toLowerCase() === callsign.toLowerCase());
+
+  if (playerIndex === -1) {
+    return res.status(404).json({ error: 'Player not found' });
+  }
+
+  const match = await bcrypt.compare(password, players[playerIndex].passwordHash);
+  if (!match) {
+    return res.status(401).json({ error: 'Incorrect password' });
+  }
+
+  // Remove the player
+  players.splice(playerIndex, 1);
+  savePlayers(players);
+
+  res.json({ success: true, message: 'Your record has been deleted' });
+});
 // Fallback routes
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
