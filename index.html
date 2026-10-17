@@ -178,6 +178,9 @@
         </div>
         <button class="secondary" onclick="logout()">CHANGE CALLSIGN</button>
         <a href="leaderboard.html" class="btn secondary">VIEW LEADERBOARD</a>
+        <button class="secondary" onclick="deleteMyRecord()" style="margin-left: 0.6rem; color: #ff6b6b; border-color: #ff6b6b;">
+          REMOVE MY RECORD
+        </button>
       </div>
 
       <div class="card">
@@ -309,10 +312,43 @@
       }
     }
 
+    async function deleteMyRecord() {
+      if (!currentCallsign || !currentPassword) {
+        alert('Please login first');
+        return;
+      }
+
+      if (!confirm(`Are you sure you want to permanently delete your record for "${currentCallsign}"?`)) {
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/delete-me', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            callsign: currentCallsign,
+            password: currentPassword
+          })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          alert(data.error || 'Failed to delete');
+          return;
+        }
+
+        alert('Your record has been deleted.');
+        logout();
+      } catch (err) {
+        alert('Server error');
+      }
+    }
+
     // Auto-login if already authenticated in this tab
     if (currentCallsign && currentPassword) {
       document.getElementById('current-user').textContent = currentCallsign;
-      // We don't know the score yet, so fetch leaderboard or just show 0 until submit
       document.getElementById('score').textContent = '?';
       showApp();
     }
